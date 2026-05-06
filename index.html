@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donggun's Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* ── Reset ─────────────────────────────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --cyan:   #00ff41;
+            --blue:   #009922;
+            --gold:   #ffcc00;
+            --green:  #00ff41;
+            --dark:   #000d1a;
+            --panel:  rgba(0, 18, 10, 0.85);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--dark);
+            color: var(--cyan);
+            font-family: 'Orbitron', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ── Starfield canvas ───────────────────── */
+        #starfield {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        /* ── Planet background ─────────────────── */
+        #planet-bg {
+            position: fixed;
+            right: -8%;
+            bottom: -10%;
+            width: 65vmin;
+            height: 65vmin;
+            z-index: 1;
+            background: url('images/planet1.jpg') no-repeat center center;
+            background-size: contain;
+            opacity: 0.18;
+            pointer-events: none;
+            filter: blur(1.5px) saturate(0.8);
+        }
+
+        /* ── CRT scanlines ──────────────────────── */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 3px,
+                rgba(0,0,0,0.06) 3px,
+                rgba(0,0,0,0.06) 4px
+            );
+        }
+
+        /* ── Layout ─────────────────────────────── */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+        }
+
+        /* ── NAV ────────────────────────────────── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 0;
+            background: rgba(0,10,24,0.9);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0,255,65,0.2);
+        }
+        nav a {
+            font-size: 0.62rem;
+            letter-spacing: 0.25em;
+            color: rgba(0,255,65,0.6);
+            text-decoration: none;
+            padding: 6px 14px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        nav a:hover {
+            color: var(--cyan);
+            border-color: var(--cyan);
+            text-shadow: 0 0 8px var(--cyan);
+        }
+
+        /* ── HERO ───────────────────────────────── */
+        header {
+            text-align: center;
+            padding: 90px 20px 50px;
+        }
+        .hero-tag {
+            display: inline-block;
+            font-size: 0.6rem;
+            letter-spacing: 0.35em;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 4px 18px;
+            margin-bottom: 28px;
+            animation: blink-pulse 2.5s infinite;
+        }
+        @keyframes blink-pulse {
+            0%,100% { opacity: 1; }
+            50%      { opacity: 0.4; }
+        }
+
+        h1 {
+            font-size: clamp(2.8rem, 7vw, 5.5rem);
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #cc44ff;
+            text-shadow:
+                0 0 10px #cc44ff,
+                0 0 30px #cc44ff,
+                0 0 70px #aa00ff;
+            line-height: 1.05;
+        }
+        .hero-sub {
+            margin-top: 18px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            letter-spacing: 0.18em;
+            color: #7fffa0;
+        }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1em;
+            background: var(--cyan);
+            vertical-align: text-bottom;
+            animation: cursor-blink 1s step-end infinite;
+        }
+        @keyframes cursor-blink {
+            0%,100% { opacity: 1; }
+            50%      { opacity: 0; }
+        }
+
+        /* ── Divider ────────────────────────────── */
+        .sc-divider {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 36px 0;
+            color: var(--gold);
+            font-size: 0.85rem;
+        }
+        .sc-divider::before, .sc-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan) 40%, transparent);
+        }
+
+        /* ── HUD Panel ──────────────────────────── */
+        .hud-panel {
+            background: var(--panel);
+            border: 1px solid rgba(0,255,65,0.35);
+            padding: 30px 32px;
+            position: relative;
+            backdrop-filter: blur(8px);
+            box-shadow:
+                0 0 24px rgba(0,255,65,0.08),
+                inset 0 0 24px rgba(0,255,65,0.04);
+            margin-bottom: 28px;
+        }
+        /* Gold corner brackets */
+        .hud-panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 22px; height: 22px;
+            border-top: 3px solid var(--gold);
+            border-left: 3px solid var(--gold);
+        }
+        .hud-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 22px; height: 22px;
+            border-bottom: 3px solid var(--gold);
+            border-right: 3px solid var(--gold);
+        }
+        .panel-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.3em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .panel-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            opacity: 0.4;
+        }
+
+        /* ── About ──────────────────────────────── */
+        .about-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.98rem;
+            line-height: 1.9;
+            color: #a8eec0;
+        }
+        .about-text .hl { color: var(--cyan); }
+
+        /* ── Stats ──────────────────────────────── */
+        .status-row {
+            display: flex;
+            gap: 32px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .stat-block {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: rgba(0,255,65,0.55);
+            letter-spacing: 0.1em;
+        }
+        .stat-block .val {
+            display: block;
+            font-size: 1.6rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: var(--cyan);
+            text-shadow: 0 0 10px var(--cyan);
+        }
+
+        /* ── Skills ─────────────────────────────── */
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+        }
+        .skill-item {
+            background: rgba(0,255,65,0.04);
+            border: 1px solid rgba(0,255,65,0.15);
+            padding: 16px 18px;
+        }
+        .skill-name {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+        /* HP-bar style (green = Terran HP, blue = Protoss shield) */
+        .bar-track {
+            height: 8px;
+            background: rgba(0,255,65,0.1);
+            border: 1px solid rgba(0,255,65,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            width: 0;
+            transition: width 1.6s cubic-bezier(.25,.46,.45,.94);
+        }
+        .bar-fill.hp     { background: linear-gradient(90deg, #00cc44, var(--green)); box-shadow: 0 0 6px var(--green); }
+        .bar-fill.shield { background: linear-gradient(90deg, #00aa44, #00ffaa); box-shadow: 0 0 6px #00ffaa; }
+        .bar-fill.energy { background: linear-gradient(90deg, #aa00ff, #cc44ff); box-shadow: 0 0 6px #cc44ff; }
+        .skill-type {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(0,255,65,0.4);
+            margin-top: 4px;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Projects ───────────────────────────── */
+        .project-card {
+            border: 1px solid rgba(0,255,65,0.22);
+            padding: 22px;
+            margin-bottom: 16px;
+            position: relative;
+            transition: border-color 0.25s, box-shadow 0.25s;
+            cursor: default;
+        }
+        .project-card:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 0 18px rgba(0,255,65,0.18);
+        }
+        .project-card::before {
+            content: '◉';
+            position: absolute;
+            top: 20px; left: -12px;
+            color: var(--gold);
+            font-size: 0.7rem;
+            background: var(--dark);
+            padding: 0 4px;
+        }
+        .project-card h3 {
+            font-size: 0.8rem;
+            letter-spacing: 0.18em;
+            color: var(--cyan);
+            margin-bottom: 10px;
+        }
+        .project-card p {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: #80e0a8;
+            line-height: 1.65;
+        }
+        .project-tags {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            padding: 2px 8px;
+            border: 1px solid rgba(255,204,0,0.4);
+            color: var(--gold);
+        }
+
+        /* ── Contact ────────────────────────────── */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+        }
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: #80ffaa;
+            text-decoration: none;
+            padding: 14px 16px;
+            border: 1px solid rgba(0,255,65,0.2);
+            transition: all 0.25s;
+        }
+        .contact-item:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            background: rgba(0,255,65,0.05);
+            box-shadow: 0 0 12px rgba(0,255,65,0.15);
+        }
+        .c-icon { font-size: 1.3em; color: var(--gold); }
+
+        /* ── Footer ─────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.68rem;
+            color: rgba(0,255,65,0.25);
+            letter-spacing: 0.22em;
+        }
+
+        /* ── Responsive ─────────────────────────── */
+        @media (max-width: 600px) {
+            .hud-panel { padding: 20px 18px; }
+            nav a { font-size: 0.55rem; padding: 5px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Animated starfield -->
+<canvas id="starfield"></canvas>
+
+<!-- Planet background -->
+<div id="planet-bg"></div>
+
+<!-- CRT scanline overlay -->
+<div class="scanlines"></div>
+
+<!-- Navigation -->
+<nav>
+    <a href="#about">BRIEFING</a>
+    <a href="#skills">STATS</a>
+    <a href="#projects">MISSIONS</a>
+    <a href="#contact">COMMS</a>
+</nav>
+
+<div class="container">
+
+    <!-- ── HERO ───────────────────────────────────── -->
+    <header>
+        <div class="hero-tag">[ TERRAN DOMINION — UNIT PROFILE ]</div>
+        <h1>DONGGUN</h1>
+        <p class="hero-sub" id="typewriter"></p><span class="cursor"></span>
+    </header>
+
+    <div class="sc-divider">◈</div>
+
+    <!-- ── ABOUT ──────────────────────────────────── -->
+    <section id="about" class="hud-panel">
+        <div class="panel-label">PERSONNEL FILE</div>
+        <p class="about-text">
+            안녕하세요. 저는 <span class="hl">Donggun</span>입니다.<br>
+            여기에 자기소개를 입력하세요.<br>
+            개발자로서의 경험, 관심사, 그리고 목표를 작성해 주세요.
+        </p>
+        <div class="status-row">
+            <div class="stat-block">
+                <span class="val">2+</span>경력 (년)
+            </div>
+            <div class="stat-block">
+                <span class="val">10+</span>완료 프로젝트
+            </div>
+            <div class="stat-block">
+                <span class="val">∞</span>커피 소비량
+            </div>
+        </div>
+    </section>
+
+    <!-- ── SKILLS ─────────────────────────────────── -->
+    <section id="skills" class="hud-panel">
+        <div class="panel-label">ABILITY</div>
+        <div class="skill-grid">
+            <div class="skill-item">
+                <div class="skill-name">HTML / CSS</div>
+                <div class="bar-track"><div class="bar-fill hp" data-w="85"></div></div>
+                <div class="skill-type">HP  85/100</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name">JavaScript</div>
+                <div class="bar-track"><div class="bar-fill hp" data-w="70"></div></div>
+                <div class="skill-type">HP  70/100</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name">Python</div>
+                <div class="bar-track"><div class="bar-fill shield" data-w="60"></div></div>
+                <div class="skill-type">SHIELD  60/100</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name">Git / GitHub</div>
+                <div class="bar-track"><div class="bar-fill shield" data-w="75"></div></div>
+                <div class="skill-type">SHIELD  75/100</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name">스킬명 추가</div>
+                <div class="bar-track"><div class="bar-fill energy" data-w="50"></div></div>
+                <div class="skill-type">ENERGY  50/100</div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name">스킬명 추가</div>
+                <div class="bar-track"><div class="bar-fill energy" data-w="40"></div></div>
+                <div class="skill-type">ENERGY  40/100</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── PROJECTS ───────────────────────────────── -->
+    <section id="projects" class="hud-panel">
+        <div class="panel-label">MISSION LOG</div>
+        <div class="project-card">
+            <h3>프로젝트 이름 1</h3>
+            <p>프로젝트 설명을 입력하세요. 어떤 기술을 사용했는지, 무엇을 만들었는지 간략히 작성해 주세요.</p>
+            <div class="project-tags">
+                <span class="tag">HTML</span>
+                <span class="tag">CSS</span>
+                <span class="tag">JS</span>
+            </div>
+        </div>
+        <div class="project-card">
+            <h3>프로젝트 이름 2</h3>
+            <p>프로젝트 설명을 입력하세요.</p>
+            <div class="project-tags">
+                <span class="tag">Python</span>
+                <span class="tag">GitHub</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── CONTACT ────────────────────────────────── -->
+    <section id="contact" class="hud-panel">
+        <div class="panel-label">E-Mail & Github</div>
+        <div class="contact-grid">
+            <a class="contact-item" href="mailto:guugun@naver.com">
+                <span class="c-icon">✉</span>guugun@naver.com
+            </a>
+            <a class="contact-item" href="https://github.com/guugun" target="_blank" rel="noopener">
+                <span class="c-icon">⬡</span>GitHub
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        [ SECTOR 2026 &nbsp;—&nbsp; GHOST ACADEMY CLEARANCE GRANTED &nbsp;—&nbsp; ALL SYSTEMS NOMINAL ]
+    </footer>
+
+</div><!-- /container -->
+
+<script>
+/* ── Starfield ─────────────────────────────────────────── */
+const canvas = document.getElementById('starfield');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+/* Small background stars */
+const STAR_COUNT = 320;
+const stars = Array.from({ length: STAR_COUNT }, () => ({
+    x:  Math.random(),   // stored as fraction so resize works
+    y:  Math.random(),
+    r:  Math.random() * 1.4 + 0.3,
+    spd: Math.random() * 0.25 + 0.04,
+    a:  Math.random() * 0.8 + 0.2
+}));
+
+/* Bright pulsing cyan/blue stars */
+const BRIGHT_COUNT = 18;
+const bright = Array.from({ length: BRIGHT_COUNT }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: Math.random() * 2 + 1,
+    ph: Math.random() * Math.PI * 2
+}));
+
+function drawFrame() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    /* Deep-space radial bg */
+    const bg = ctx.createRadialGradient(W/2, H*0.4, 0, W/2, H*0.4, W*0.85);
+    bg.addColorStop(0, '#000e1f');
+    bg.addColorStop(1, '#000000');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    /* Faint nebula */
+    const neb = ctx.createRadialGradient(W*0.25, H*0.35, 0, W*0.25, H*0.35, W*0.45);
+    neb.addColorStop(0, 'rgba(0,80,20,0.13)');
+    neb.addColorStop(1, 'transparent');
+    ctx.fillStyle = neb;
+    ctx.fillRect(0, 0, W, H);
+
+    const neb2 = ctx.createRadialGradient(W*0.75, H*0.65, 0, W*0.75, H*0.65, W*0.35);
+    neb2.addColorStop(0, 'rgba(0,120,40,0.08)');
+    neb2.addColorStop(1, 'transparent');
+    ctx.fillStyle = neb2;
+    ctx.fillRect(0, 0, W, H);
+
+    /* Drift stars */
+    stars.forEach(s => {
+        s.y += s.spd / H;
+        if (s.y > 1) { s.y = 0; s.x = Math.random(); }
+        ctx.beginPath();
+        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(180,255,200,${s.a})`;
+        ctx.fill();
+    });
+
+    /* Pulsing bright stars */
+    bright.forEach(s => {
+        s.ph += 0.018;
+        const glow = (Math.sin(s.ph) + 1) / 2;
+        const sx = s.x * W, sy = s.y * H;
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, s.r * 5);
+        grad.addColorStop(0, `rgba(0,255,65,${0.75 * glow})`);
+        grad.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.r * 5, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${0.55 + 0.45 * glow})`;
+        ctx.fill();
+    });
+
+    requestAnimationFrame(drawFrame);
+}
+requestAnimationFrame(drawFrame);
+
+/* ── Typewriter hero subtitle ─────────────────────────── */
+const lines = [
+    'DEVELOPER  |  CREATOR  |  EXPLORER',
+    'INITIATING PROFILE UPLINK...',
+    'READY.'
+];
+const tw = document.getElementById('typewriter');
+let li = 0, ci = 0;
+
+function type() {
+    if (li >= lines.length) return;
+    if (ci < lines[li].length) {
+        tw.textContent += lines[li][ci++];
+        setTimeout(type, 55);
+    } else {
+        if (li < lines.length - 1) {
+            setTimeout(() => {
+                tw.textContent = '';
+                ci = 0; li++;
+                type();
+            }, 900);
+        }
+    }
+}
+type();
+
+/* ── Skill bar animation on scroll ───────────────────── */
+const barObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+        if (e.isIntersecting) {
+            e.target.querySelectorAll('.bar-fill').forEach(bar => {
+                bar.style.width = bar.dataset.w + '%';
+            });
+        }
+    });
+}, { threshold: 0.25 });
+
+document.querySelectorAll('.hud-panel').forEach(p => barObserver.observe(p));
+</script>
+</body>
+</html>
